@@ -1,0 +1,16 @@
+CHECKERS - Hollow Creek General Store  (v@VERSION@)
+====================================================
+
+Developed & Published by ... Ironite
+Game Design ................ Ironite
+Art & Illustration ......... Ironite
+Checkers Engine ............ Ironite
+Music ...................... Ironite
+  "Potbelly Stove Waltz", "Kings Row Breakdown",
+  "Penny Candy Rag", "Sweet Tea on the Porch"
+Sound Effects .............. Ironite
+Programming ................ Ironite
+Typefaces .................. National Park, Young Serif, Work Sans
+                             (SIL Open Font License, see OFL.txt)
+
+Copyright (c) 2026 Ironite. All rights reserved.

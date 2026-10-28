@@ -1,0 +1,53 @@
+<!doctype html><html><head><style>
+@font-face { font-family: 'National Park'; src: url(../web/fonts/NationalPark-Bold.ttf); font-weight: 700; }
+@font-face { font-family: 'Young Serif'; src: url(../web/fonts/YoungSerif-Regular.ttf); }
+@font-face { font-family: 'Work Sans'; src: url(../web/fonts/WorkSans-Regular.ttf); }
+</style></head><body>
+<span style="font-family:'Young Serif'">a</span><span style="font-family:'National Park';font-weight:700">a</span><span style="font-family:'Work Sans'">a</span>
+<script src="../web/core.js"></script><script src="../web/art.js"></script>
+<script>
+const D = IR.draw;
+// a tilted board with a game in progress; layout in board squares (r, c, code)
+const POS = [[0,1,1],[0,5,1],[1,2,1],[1,4,1],[1,6,1],[2,1,1],[2,7,1],[3,4,1],[4,1,-1],[4,5,-1],[5,2,-1],[5,6,-1],[6,1,-1],[6,3,-2],[6,7,-1],[7,4,-1],[7,6,-1],[3,2,2]];
+function tableBoard(x, cx, cy, size, rot, theme='barrel', set='classic') {
+  x.save(); x.translate(cx, cy); x.rotate(rot);
+  const fr = size * 1.1, inner = size;
+  x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 40; x.shadowOffsetY = 20;
+  x.drawImage(ART.boardFrame(theme, Math.round(fr), Math.round(inner), false), -fr/2, -fr/2, fr, fr);
+  x.shadowColor = 'transparent';
+  x.drawImage(ART.boardSurface(theme, Math.round(inner)), -inner/2, -inner/2, inner, inner);
+  const s = inner / 8;
+  for (const [r, c, p] of POS) x.drawImage(ART.piece(p, Math.round(s*1.6), set), -inner/2 + c*s, -inner/2 + r*s, s, s);
+  x.restore();
+}
+function backdrop(x, W, H) {
+  const sc = document.createElement('canvas'); ART.scene(sc, W, H, 1, null); x.drawImage(sc, 0, 0);
+}
+function cover() {
+  const W = 480, H = 600, k = 2, c = document.createElement('canvas'); c.width = W*k; c.height = H*k; const x = c.getContext('2d'); x.scale(k, k);
+  backdrop(x, W, H);
+  // gingham under the board
+  tableBoard(x, 250, 470, 380, -.16);
+  x.fillStyle = D.lin(x, 0, 0, 0, H, ['rgba(26,14,5,.95)', 'rgba(26,14,5,.75)', 'rgba(26,14,5,0)', 'rgba(0,0,0,0)']); x.fillRect(0, 0, W, 300);
+  x.textAlign = 'center';
+  x.fillStyle = '#e9c46a'; x.font = "700 21px 'National Park'"; x.letterSpacing = '5px'; x.fillText('HOLLOW CREEK', W/2, 64);
+  x.letterSpacing = '0px';
+  x.fillStyle = '#f7e8c6'; x.font = "68px 'Young Serif'"; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 12; x.fillText('Checkers', W/2, 142); x.shadowBlur = 0;
+  x.fillStyle = '#d8b866'; x.fillRect(W/2 - 90, 164, 180, 2);
+  x.fillStyle = '#f0dcb0'; x.font = "italic 17px 'Work Sans'"; x.fillText('six regulars · one old barrel', W/2, 194);
+  // hero pieces
+  x.drawImage(ART.piece(1, 520), 175, 255, 330, 330);
+  x.drawImage(ART.piece(-2, 600), 30, 290, 330, 330);
+  return c;
+}
+function hero() {
+  const W = 1800, H = 630, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  backdrop(x, W, H);
+  tableBoard(x, 1330, 330, 760, .12);
+  x.fillStyle = D.lin(x, 0, 0, W*.62, 0, ['rgba(22,12,4,.98)', 'rgba(22,12,4,.92)', 'rgba(22,12,4,.5)', 'rgba(22,12,4,0)']); x.fillRect(0, 0, W, H);
+  x.drawImage(ART.piece(-2, 700), 950, 150, 520, 520);
+  x.drawImage(ART.piece(1, 560), 1330, 70, 430, 430);
+  return c;
+}
+window.out = () => ({ cover: cover().toDataURL('image/png'), hero: hero().toDataURL('image/png') });
+</script></body></html>

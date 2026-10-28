@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkers</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <header id="bar">
+    <div class="title">Checkers<small>Hollow Creek</small></div>
+    <button id="bNew" title="New game (N)">New Game</button>
+    <button id="bUndo" title="Take back a move (Ctrl+Z)">Undo</button>
+    <button id="bHint" title="Suggest a move (H)">Hint</button>
+    <button id="bFlip" title="Turn the board around (F)">Flip Board</button>
+    <button id="bDraw" title="Offer a draw">Offer Draw</button>
+    <button id="bResign" title="Resign this game">Resign</button>
+    <span class="sep"></span>
+    <button id="bMusic" title="Music (M)">&#9835; Music</button>
+    <input id="vol" type="range" min="0" max="100" title="Volume">
+    <button id="bSfx" title="Sound effects">Sounds</button>
+    <button id="bSettings" title="Board, pieces and play options">Options</button>
+    <button id="bCredits2" title="Credits and changelog">Credits</button>
+    <div class="stats"><span>Won <b id="sWon">0</b></span><span>Drawn <b id="sDrawn">0</b></span><span>Lost <b id="sLost">0</b></span></div>
+  </header>
+
+  <main id="table">
+    <canvas id="scene"></canvas>
+    <canvas id="board" width="800" height="800"></canvas>
+
+    <section id="side">
+      <div class="plaque" id="pTop">
+        <canvas class="av" width="200" height="200"></canvas>
+        <div class="who"><b class="nm"></b><span class="rt"></span><span class="think"></span></div>
+        <div class="caps"></div>
+        <div class="left"></div>
+      </div>
+
+      <div id="moves" class="sheet">
+        <div class="sh">Score Sheet<span id="moveNote"></span></div>
+        <div id="moveList"></div>
+        <div class="nav"><button data-nav="start" title="First position (Home)">&#x23EE;</button><button data-nav="prev" title="Back one move (&larr;)">&#x25C0;</button><button data-nav="next" title="Forward one move (&rarr;)">&#x25B6;</button><button data-nav="end" title="Current position (End)">&#x23ED;</button></div>
+      </div>
+
+      <div id="status"><span id="statusText">&nbsp;</span></div>
+
+      <div class="plaque" id="pBot">
+        <canvas class="av" width="200" height="200"></canvas>
+        <div class="who"><b class="nm"></b><span class="rt"></span><span class="think"></span></div>
+        <div class="caps"></div>
+        <div class="left"></div>
+      </div>
+    </section>
+
+    <div id="banner"></div>
+    <canvas id="fx"></canvas>
+    <div id="nowPlaying"></div>
+    <div id="ver"></div>
+  </main>
+
+  <!-- title / new game -->
+  <div class="veil" id="title">
+    <div class="panel box title-box">
+      <div class="sign"><span class="kick">A game at the</span><b>Hollow Creek</b><span class="kick">General Store &middot; Est. 1931</span></div>
+      <h1>Checkers</h1>
+      <div class="modeRow chips" id="optMode"><button data-v="ai">Play the Computer</button><button data-v="pvp">Two Players</button></div>
+      <div id="folks"></div>
+      <div id="folkTag"></div>
+      <div class="opts">
+        <div class="opt" id="rowColor"><span>Play as</span><div class="chips" id="optColor"><button data-v="black">Black (moves first)</button><button data-v="random">Random</button><button data-v="red">Red</button></div></div>
+        <div class="opt"><span>Jumping</span><div class="chips" id="optForced"><button data-v="on">Must jump (standard)</button><button data-v="off">Optional (house rules)</button></div></div>
+      </div>
+      <div class="startRow"><button class="big ghost hidden" id="bContinue">Continue Game</button><button class="big" id="bStart">Start Game</button></div>
+      <div class="links"><button id="bHow">How to Play</button> &middot; <button id="bSettings2">Options</button> &middot; <button id="bCredits">Credits &amp; Changelog</button></div>
+      <div class="by"><span>An</span><img src="ironite-logo.png" alt="Ironite"><span>game</span></div>
+    </div>
+  </div>
+
+  <!-- game over -->
+  <div class="veil hidden" id="over">
+    <div class="panel box over-box">
+      <canvas class="av" id="overAv" width="240" height="240"></canvas>
+      <div class="kick" id="overKick"></div>
+      <h3 id="overTitle"></h3>
+      <p id="overText"></p>
+      <p class="quote" id="overQuote"></p>
+      <div class="startRow"><button class="big" id="bRematch">Rematch</button><button class="big ghost" id="bOverNew">New Game</button></div>
+      <div class="links"><button id="bReview">Review the game</button> &middot; <button id="bCopy">Copy moves</button></div>
+    </div>
+  </div>
+
+  <!-- confirm -->
+  <div class="veil hidden" id="confirm">
+    <div class="panel box confirm-box">
+      <h3 id="cTitle"></h3>
+      <p id="cText"></p>
+      <div class="startRow"><button class="big" id="cYes">Yes</button><button class="big ghost" id="cNo">No</button></div>
+    </div>
+  </div>
+
+  <!-- options -->
+  <div class="veil hidden closable" id="settings">
+    <div class="panel box text-panel set-panel">
+      <h3>Options</h3>
+      <div class="opts left">
+        <div class="opt"><span>Board</span><div class="chips" id="optBoard"><button data-v="barrel">Barrelhead</button><button data-v="parlor">Parlor Red</button><button data-v="tourney">Tournament Green</button></div></div>
+        <div class="opt"><span>Pieces</span><div class="chips" id="optPieces"><button data-v="classic">Red &amp; Black</button><button data-v="wood">Walnut &amp; Maple</button><button data-v="caps">Bottle Caps</button></div></div>
+        <div class="opt"><span>Show legal moves</span><div class="chips" id="optDots"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+        <div class="opt"><span>Square numbers</span><div class="chips" id="optNums"><button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
+        <div class="opt"><span>Move speed</span><div class="chips" id="optAnim"><button data-v="slow">Relaxed</button><button data-v="normal">Normal</button><button data-v="fast">Brisk</button></div></div>
+        <div class="opt"><span>Two players</span><div class="chips" id="optTurn"><button data-v="on">Turn the board each move</button><button data-v="off">Keep it still</button></div></div>
+      </div>
+      <p class="muted">The square numbers (1 to 32) are the ones used on the score sheet, the way checkers games have been written down for two hundred years.</p>
+      <button class="big small" data-close>Done</button>
+    </div>
+  </div>
+
+  <div class="veil hidden closable" id="rules">
+    <div class="panel box text-panel">
+      <h3>How to Play</h3>
+      <p>Each side starts with twelve pieces on the dark squares. <b>Black moves first</b>, then the players take turns. You win by capturing all of your opponent's pieces, or by leaving them with no move to make.</p>
+      <ol>
+        <li><b>Moving.</b> Pieces move one square diagonally forward onto an empty dark square. Click a piece and then a square, or drag it there. Dots show where it can go.</li>
+        <li><b>Jumping.</b> Capture an enemy piece by jumping diagonally over it onto the empty square just beyond. If you can keep jumping from where you land, you must, even changing direction. Click each landing square in turn, or just the last one.</li>
+        <li><b>You must jump.</b> When a capture is available you have to take one (pick whichever you like). Pieces that can jump glow gold. In the options on the title screen you can make jumping optional, as some families do.</li>
+        <li><b>Kings.</b> A piece that reaches the far row is crowned and becomes a king, and its move ends there. Kings move and jump diagonally both forward and backward.</li>
+        <li><b>Draws.</b> The same position three times, forty moves each with no capture and no plain piece moved, or a draw offer that's accepted.</li>
+      </ol>
+      <p>Six regulars at the Hollow Creek General Store will give you a game, from Little Tucker (just learning) to Old Gus, county champion. Your record against each of them is kept, and an unfinished game is waiting when you come back.</p>
+      <p class="muted">Keys: Ctrl+Z undo &middot; H hint &middot; F flip board &middot; &larr; &rarr; step through the moves &middot; N new game &middot; M music &middot; Esc cancel a jump &middot; F11 full screen</p>
+      <button class="big small" data-close>Back to the Board</button>
+    </div>
+  </div>
+
+  <div class="veil hidden closable" id="credits">
+    <div class="panel box text-panel">
+      <h3>Credits</h3>
+      <div class="cred">
+        <div><span>Developed &amp; Published by</span><b>Ironite</b></div>
+        <div><span>Game Design</span><b>Ironite</b></div>
+        <div><span>Art &amp; Illustration</span><b>Ironite</b></div>
+        <div><span>Checkers Engine</span><b>Ironite</b></div>
+        <div><span>Music</span><b>Ironite</b></div>
+        <div class="tunes">"Potbelly Stove Waltz", "Kings Row Breakdown", "Penny Candy Rag", "Sweet Tea on the Porch"</div>
+        <div><span>Sound Effects</span><b>Ironite</b></div>
+        <div><span>Programming</span><b>Ironite</b></div>
+        <div><span>Typefaces</span><b>National Park, Young Serif, Work Sans (SIL Open Font License)</b></div>
+      </div>
+      <p class="muted">Copyright &copy; 2026 Ironite. All rights reserved.</p>
+      <h3>Changelog</h3>
+      <div id="changelog" class="changelog"></div>
+      <button class="big small" data-close>Close</button>
+    </div>
+  </div>
+</div>
+<script src="core.js"></script>
+<script src="checkers.js"></script>
+<script src="art.js"></script>
+<script src="music.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
