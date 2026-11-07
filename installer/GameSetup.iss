@@ -17,7 +17,7 @@
 #ifndef Bundle
   #error Compile GoFishSetup.iss, BlackjackSetup.iss, TexasHoldemSetup.iss, ChessSetup.iss or CheckersSetup.iss, not this template.
 #endif
-#define Files "..\files"
+#define Files "..\dist"
 
 [Setup]
 AppId={#AppGuid}

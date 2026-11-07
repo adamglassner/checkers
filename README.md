@@ -1,53 +1,80 @@
 # Checkers: Hollow Creek General Store
 
-An Ironite game. American checkers in an old country store, against six regulars or a friend.
+American checkers in an old country store, by Ironite. Written in Go with
+[Ebitengine](https://ebitengine.org). Play six regulars from beginner to
+county champion, share one computer with a friend, or play together online.
+It ships on its own and inside the Ironite Launcher.
 
 ![Checkers](assets/cover.jpg)
 
-- **Full American checkers rules:** forced captures (or optional ones, as a house rule), multi-jumps, crowning that ends the move, and kings that move both ways. Draws come from threefold repetition, the forty-move rule or agreement.
-- **Six computer opponents,** from Little Tucker (just learning) to Old Gus (county champion). The engine is alpha-beta search running in a Web Worker.
-- **HD art drawn in code at any resolution:** three boards (Barrelhead, Parlor Red, Tournament Green) and three piece sets (Red & Black, Walnut & Maple, Bottle Caps).
-- **Original music and sounds:** four old-time tunes and all sound effects are synthesized live with Web Audio.
-- **Saves:** your unfinished game, record and settings live in `%APPDATA%\Ironite\Checkers`.
+## How to play
 
-## Layout
+- **Rules:** full American checkers. Captures are compulsory (or optional, as a house rule), multi-jumps are taken in full, a man that reaches the far row is crowned and his move ends, and kings move both ways. You lose with no pieces or no move. Draws come from threefold repetition, the forty-move rule or agreement.
+- **Moving:** click a piece and then a square, or drag it. Take multi-jumps one landing at a time or click the last square. Pieces that must jump glow gold.
+- **Tools:** undo, hint, flip board, offer a draw, resign, and a score sheet in standard 1–32 notation that steps back through the game and copies it as text.
+- **Keys:** `Ctrl+Z` undo, `H` hint, `F` flip, `N` new game, `M` music, `←`/`→` step through the moves, `Esc` cancels a jump, `F11` full screen.
 
+### Ways to play
+
+- **Play the Computer:** the six regulars are the six levels: Little Tucker, Miss Opal, Deacon Earl, Hattie Mae, Doc Whitfield and Old Gus. Each keeps their face and style but gets a fresh name each game, always one that fits them (Miss Opal might be Miss Pearl or Miss Edna). Your record is kept per level.
+- **Same Computer:** two people share one PC, each with their own name and face. The board turns to face whoever's moving.
+- **Online:** one player hosts and a friend joins by IP address (TCP port 47020). The host's game picks the colours and the rules, and referees every move. Players can offer draws, resign and ask for rematches (the colours swap). If one leaves mid-game, the other can finish against the computer.
+
+Saves and settings are in `%APPDATA%\Ironite\Checkers\save.json` (the same
+file and format as 1.0.0, so existing saves carry over), outside the install
+folder. Online games aren't saved.
+
+## Code
+
+| File | What it is |
+|---|---|
+| `main.go` | Window setup, the frame loop, mouse, keys and text fields. |
+| `game.go` | The game: turns, moves and jumps, the computer opponent, undo, hints, draws, review, the record. |
+| `net.go` | Online play: host/guest protocol (JSON lines over TCP). |
+| `engine.go`, `ai.go` | Rules (perft-verified) and the computer player: alpha-beta with iterative deepening, a transposition table and six levels. |
+| `ui.go` | Toolbar, side panel, score sheet, title screen and every dialog. |
+| `board.go`, `fx.go` | The board drawn each frame: pieces, highlights, rings, dots, the hint arrow, move animation, confetti, bubbles and banners. |
+| `gfx.go`, `text.go` | The 2D painter (gradients, rounded shapes, shadows, text) used for the panels, at the window's real resolution. |
+| `synth.go`, `music.go`, `audio.go` | The synthesizer that plays the four tunes and the sound effects live. |
+| `data.go`, `save.go`, `assets.go` | The regulars and their names, piece sets and boards; the save file; embedded assets. |
+| `assets/` | Boards, pieces, portraits, the store scene, fonts, icon and launcher art. |
+| `tools/mkres/` | Writes the Windows icon and version info into the .exe. |
+| `installer/` | Inno Setup scripts for the standalone `Checkers-Setup-v<version>.exe`. |
+
+## Tests
+
+The tests use the `headless` build tag, which builds the game with no window
+or sound:
+
+```bash
+go test -tags headless .
 ```
-web/          The game: index.html, checkers.js (rules), ai.js (engine), art.js, music.js, game.js
-              core.js + base.css are shared with the other Ironite games
-app/          Go shell: serves web/ and opens it in an Edge app window, handles saves
-tools/        perft.js, aitest.js, art/cover/icon render pages, mkres (exe icon + version, deps vendored)
-assets/       icon-1024.png, launcher cover and banner art
-package/      README.txt and CREDITS.txt that ship with the game
-installer/    Inno Setup script (CheckersSetup.iss + shared template) and wizard art
-```
 
-## Build
+- `engine_test.go`: move generation against the published perft counts (depth 1–8), multi-jumps and crowning, and the computer levels.
+- `net_test.go`: a host and a guest over real TCP. It plays whole games and checks both boards stay identical, plus rematches, a draw offer, a bad move from the guest being corrected, the guest leaving (the computer takes over) and a third player being turned away.
+- `perf_test.go`: how long a repaint of the panels takes at 1080p, 1440p and 4K.
 
-Needs Go 1.24 or newer. Runs on Linux, macOS or WSL and works offline.
+`testhooks_js.go` and `save_js.go` are for the browser build (`GOOS=js GOARCH=wasm`) used for automated screenshots.
 
-```
+## Building
+
+You need Go 1.24 or newer and bash (Git Bash works on Windows). No C compiler
+is needed.
+
+```bash
 ./build.sh
 ```
 
-That produces:
-
-- `dist/Checkers/Checkers.exe`, the Windows game
-- `dist/Checkers-Installer-v1.0.0/`: copy this folder to Windows and double-click **Build Installer.bat**. It uses Inno Setup 6.3 or newer and offers to install it with winget if it's missing. The setup appears in `Output\Checkers-Setup-v1.0.0.exe`.
-
-The setup installs into the Ironite folder (`Program Files\Ironite\Games\Checkers`), next to Ironite Launcher if that's installed.
-
-To play without building, open `web/` through any local web server (e.g. `python3 -m http.server` in `web/`). Saves then fall back to browser storage.
-
-## Test
-
-```
-node tools/perft.js     # move generation vs. the published counts, depth 1-8
-node tools/aitest.js    # the opponents play each other; stronger should beat weaker
-```
+That writes `dist/Games/Checkers/` with `Checkers.exe`, README, credits,
+changelog and the font licence. To make the installer, run
+`ISCC.exe installer/CheckersSetup.iss` (Inno Setup 6.3+).
 
 ## Releasing
 
-Add a `## [x.y.z]` entry to `web/CHANGELOG.md`. Also set `VERSION` in `web/game.js` and `GameVersion` in `installer/CheckersSetup.iss` to match (build.sh checks the installer).
+Add a `## [x.y.z]` section to `CHANGELOG.md`, set `Version` in `game.go` and
+`GameVersion` in `installer/CheckersSetup.iss` to match (build.sh checks),
+and push to `main`. The release workflow builds the game and publishes
+`Checkers-<version>-windows.zip` as release `v<version>`. Ironite Launcher
+installs and updates Checkers from there.
 
-(c) 2026 Ironite. Fonts: National Park, Young Serif, Work Sans (SIL Open Font License, `web/fonts/OFL.txt`).
+(c) 2026 Ironite. Fonts: National Park, Young Serif, Work Sans (SIL Open Font License, `assets/fonts/OFL.txt`).

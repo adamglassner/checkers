@@ -1,2 +1,9 @@
 dist/
 build/
+Output/
+installer/Output/
+rsrc_windows_amd64.syso
+mkres.tmp
+thh
+*.wasm
+*.test

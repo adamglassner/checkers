@@ -1,41 +1,38 @@
 #!/usr/bin/env bash
-# Builds Checkers.exe and the Checkers installer kit.
-#   dist/Checkers/                      Checkers.exe + README, CREDITS, CHANGELOG, licence
-#   dist/Checkers-Installer-v<ver>/     copy to Windows, run "Build Installer.bat"
-# Needs Go 1.24+. Works offline (the one tool dependency is vendored).
-# The version comes from the first entry in web/CHANGELOG.md.
+# Builds Checkers for Windows (64-bit).
+# Output: dist/Games/Checkers/ with Checkers.exe and its text files,
+# ready for the Ironite Launcher (the release zip) or for
+# installer/CheckersSetup.iss.
+# Needs Go 1.24+ and bash (Git Bash on Windows is fine). No C compiler needed.
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$PWD
-VERSION=$(grep -m1 -oP '^## \[\K[0-9.]+' web/CHANGELOG.md)
-ISS_VERSION=$(grep -m1 -oP '#define GameVersion\s+"\K[^"]+' installer/CheckersSetup.iss)
-[ "$ISS_VERSION" = "$VERSION" ] || { echo "installer/CheckersSetup.iss GameVersion ($ISS_VERSION) != CHANGELOG ($VERSION)"; exit 1; }
-TITLE="Checkers"   # must match the page <title> in web/index.html
-OUT=$ROOT/dist; B=$ROOT/build
-rm -rf "$OUT" "$B" && mkdir -p "$OUT/Checkers" "$B"
+BUNDLE=Checkers
+EXE=Checkers
+OUT=$ROOT/dist/Games/$BUNDLE
+export GOFLAGS=-mod=mod
+rm -rf "$ROOT/dist" && mkdir -p "$OUT"
+
+VERSION=$(grep -m1 -oE '^## \[[0-9.]+' CHANGELOG.md | tr -d '#[ ')
+CODE_VERSION=$(grep -m1 -oE 'const Version = "[0-9.]+"' game.go | grep -oE '[0-9.]+')
+ISS_VERSION=$(grep -m1 -oE 'GameVersion "[0-9.]+"' installer/CheckersSetup.iss | grep -oE '[0-9.]+')
+[ "$CODE_VERSION" = "$VERSION" ] || { echo "game.go Version ($CODE_VERSION) doesn't match CHANGELOG.md ($VERSION)"; exit 1; }
+[ "$ISS_VERSION" = "$VERSION" ] || { echo "installer/CheckersSetup.iss ($ISS_VERSION) doesn't match CHANGELOG.md ($VERSION)"; exit 1; }
+
+# Windows resource (icon + version info) for the .exe
+( cd tools/mkres && GOFLAGS=-mod=vendor go build -o "$ROOT/mkres.tmp" . )
+"$ROOT/mkres.tmp" -version "$VERSION" -icon assets/icon-1024.png -out rsrc_windows_amd64.syso \
+  -name "Checkers" -exe "$EXE.exe" -internal "$EXE" -identity "Ironite.$BUNDLE" -desc "Checkers - Hollow Creek General Store"
+rm -f "$ROOT/mkres.tmp"
+
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
+  -ldflags "-H windowsgui -s -w" -o "$OUT/$EXE.exe" .
+rm -f rsrc_windows_amd64.syso
+
 crlf() { sed 's/\r$//; s/$/\r/' "$1" > "$2"; }
-
-echo "== Resources (icon + version $VERSION)"
-( cd tools/mkres && GOFLAGS=-mod=vendor go build -o "$B/mkres" . )
-cp app/*.go app/go.mod "$B/" && cp -r web "$B/web"
-"$B/mkres" -version "$VERSION" -icon assets/icon-1024.png -out "$B/rsrc_windows_amd64.syso" \
-  -name "$TITLE" -exe Checkers.exe -internal Checkers -identity Ironite.Checkers -desc "Checkers - Hollow Creek General Store"
-
-echo "== Checkers.exe"
-( cd "$B" && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
-    -ldflags "-H windowsgui -s -w -X main.gameID=Checkers -X \"main.title=$TITLE\" -X main.version=$VERSION" \
-    -o "$OUT/Checkers/Checkers.exe" . )
-crlf web/CHANGELOG.md "$OUT/Checkers/CHANGELOG.txt"
-crlf web/fonts/OFL.txt "$OUT/Checkers/OFL.txt"
-for f in README CREDITS; do sed "s/@VERSION@/$VERSION/g" package/$f.txt > "$B/$f.txt" && crlf "$B/$f.txt" "$OUT/Checkers/$f.txt"; done
-printf '%s\r\n' "$VERSION" > "$OUT/Checkers/VERSION"
-
-echo "== Installer kit"
-KIT=$OUT/Checkers-Installer-v$VERSION
-mkdir -p "$KIT/files/Games" "$KIT/installer/assets" "$KIT/Output"
-cp -r "$OUT/Checkers" "$KIT/files/Games/"
-for f in installer/*.iss; do crlf "$f" "$KIT/installer/$(basename "$f")"; done
-cp installer/assets/* "$KIT/installer/assets/"
-crlf "installer/Build Installer.bat" "$KIT/Build Installer.bat"
-rm -rf "$B"
-ls -la "$OUT/Checkers"; echo "Kit: $KIT"
+crlf CHANGELOG.md "$OUT/CHANGELOG.txt"
+crlf assets/fonts/OFL.txt "$OUT/OFL.txt"
+sed "s/@VERSION@/$VERSION/g" README.txt  | sed 's/\r$//; s/$/\r/' > "$OUT/README.txt"
+sed "s/@VERSION@/$VERSION/g" CREDITS.txt | sed 's/\r$//; s/$/\r/' > "$OUT/CREDITS.txt"
+printf '%s\r\n' "$VERSION" > "$OUT/VERSION"
+echo "Checkers $VERSION -> $OUT/$EXE.exe"
